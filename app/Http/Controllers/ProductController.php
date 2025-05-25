@@ -9,10 +9,17 @@ use Illuminate\Support\Facades\Validator;
 
 class ProductController extends Controller
 {
-    public function index()
-    {
-        return response()->json(Product::with('categoryProduct')->get());
+    public function index(Request $request)
+{
+    $query = Product::with('categoryProduct');
+
+    // Cek apakah ada filter category_id di query string
+    if ($request->has('category_id')) {
+        $query->where('category_id', $request->category_id);
     }
+
+    return response()->json($query->get());
+}
 
     public function store(Request $request)
     {

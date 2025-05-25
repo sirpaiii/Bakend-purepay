@@ -8,9 +8,9 @@ use App\Models\Person;
 
 class PeopleController extends Controller
 {
-    public function show($id)
+     public function show($id)
     {
-        $person = Person::find($id);
+        $person = Person::with('balance')->find($id);
 
         if (!$person) {
             return response()->json([
@@ -24,4 +24,21 @@ class PeopleController extends Controller
             'data' => $person
         ], 200);
     }
+
+
+     public function update(Request $request, $id)
+    {
+        $product = Person::findOrFail($id);
+        $product->update($request->only(['name', 'phone', 'email']));
+        return response()->json($product);
+    }
+
+    public function destroy($id)
+    {
+        $product = Person::findOrFail($id);
+        $product->delete();
+        return response()->json(null, 204);
+    }
+
+  
 }

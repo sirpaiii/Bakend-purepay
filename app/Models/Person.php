@@ -12,4 +12,13 @@ class Person extends Model
         'phone',
         'email',
     ];
+
+   public function balance()
+{
+    return $this->hasOne(\App\Models\Balance::class);
 }
+
+
+}
+
+
