@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-
 use Illuminate\Http\Request;
 use App\Models\Person;
 
 class PeopleController extends Controller
 {
-     public function show($id)
+    // Menampilkan data profil
+    public function show($id)
     {
-        $person = Person::with('balance')->find($id);
+        $person = Person::find($id);
 
         if (!$person) {
             return response()->json([
@@ -21,24 +21,53 @@ class PeopleController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $person
+            'data' => [
+                'id' => $person->id,
+                'name' => $person->name,
+                'email' => $person->email,
+                'phone' => $person->phone,
+                'balance' => $person->balance ?: 0
+            ]
         ], 200);
     }
 
+    public function update(Request $request, $id)
+{
+    $person = Person::find($id);
 
-     public function update(Request $request, $id)
-    {
-        $product = Person::findOrFail($id);
-        $product->update($request->only(['name', 'phone', 'email']));
-        return response()->json($product);
+    if (!$person) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User not found'
+        ], 404);
     }
 
+    // Validasi semua field sebagai opsional (nullable)
+    $validated = $request->validate([
+        'name' => 'nullable|string|max:255',
+        'email' => 'nullable|email|max:255',
+        'phone' => 'nullable|string|max:20',
+    ]);
+
+    // Hanya update field yang dikirim (non-null)
+    $person->update(array_filter($validated));
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Profil berhasil diperbarui',
+        'data' => $person
+    ], 200);
+}
+
+    // Menghapus user
     public function destroy($id)
     {
-        $product = Person::findOrFail($id);
-        $product->delete();
-        return response()->json(null, 204);
-    }
+        $person = Person::findOrFail($id);
+        $person->delete();
 
-  
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil dihapus'
+        ]);
+    }
 }

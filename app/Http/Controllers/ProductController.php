@@ -11,15 +11,19 @@ class ProductController extends Controller
 {
     public function index(Request $request)
 {
-    $query = Product::with('categoryProduct');
+    $query = Product::query();
 
-    // Cek apakah ada filter category_id di query string
     if ($request->has('category_id')) {
         $query->where('category_id', $request->category_id);
     }
 
+    if ($request->has('provider')) {
+        $query->where('provider', $request->provider);
+    }
+
     return response()->json($query->get());
 }
+
 
     public function store(Request $request)
     {

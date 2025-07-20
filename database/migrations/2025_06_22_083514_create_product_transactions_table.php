@@ -12,13 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('product_transactions', function (Blueprint $table) {
-        $table->id();
-        $table->foreignId('user_id')->constrained('people')->onDelete('cascade');
-        $table->foreignId('product_id')->constrained('products')->onDelete('cascade');
-        $table->integer('price');
-        $table->enum('status', ['pending', 'completed', 'failed'])->default('pending');
-        $table->string('payment_reference')->nullable();
-        $table->timestamp('paid_at')->nullable();
+            $table->id();
+            $table->foreignId('person_id')->constrained()->onDelete('cascade');
+            $table->foreignId('product_id')->constrained()->onDelete('cascade');
+            $table->string('nomor_tujuan')->nullable(); // Lebih fleksibel dari "meter_number"
+            $table->decimal('amount', 15, 2);
+            $table->string('status')->default('completed'); // completed, failed, pending
             $table->timestamps();
         });
     }

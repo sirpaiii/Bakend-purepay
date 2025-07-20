@@ -4,28 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-
 class ProductTransaction extends Model
 {
-    protected $table = 'product_transactions'; // Opsional jika nama class sudah sesuai konvensi
-
-    protected $fillable = [
-        'user_id',
+   protected $fillable = [
+        'person_id',
         'product_id',
-        'price',
+        'nomor_tujuan',
+        'amount',
         'status',
-        'payment_reference',
-        'paid_at'
     ];
 
-    public function user()
+    public function person()
     {
-        return $this->belongsTo(People::class, 'user_id');
+        return $this->belongsTo(Person::class);
     }
 
     public function product()
     {
-        return $this->belongsTo(Product::class, 'product_id');
+        return $this->belongsTo(Product::class);
     }
-
 }

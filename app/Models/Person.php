@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Person extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'firebase_uid',
         'name',
@@ -20,5 +22,3 @@ class Person extends Model
 
 
 }
-
-

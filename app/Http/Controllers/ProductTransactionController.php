@@ -6,79 +6,68 @@ use Illuminate\Http\Request;
 use App\Models\ProductTransaction;
 use App\Models\Person;
 use App\Models\Product;
-use Illuminate\Support\Facades\Http;
+use App\Models\Balance;
+use Illuminate\Support\Facades\DB;
 
 class ProductTransactionController extends Controller
 {
-   public function buy(Request $request)
-{
-    $request->validate([
-        'user_id' => 'required|exists:people,id',
-        'product_id' => 'required|exists:products,id',
-        'payment_method' => 'required|string'
-    ]);
-
-    $user = Person::findOrFail($request->user_id);
-    $product = Product::findOrFail($request->product_id);
-
-    // Buat transaksi terlebih dahulu
-    $transaction = ProductTransaction::create([
-        'user_id' => $user->id,
-        'product_id' => $product->id,
-        'price' => $product->price,
-        'status' => 'pending'
-    ]);
-
-    // Buat request ke Duitku
-    $response = Http::post('http://localhost:8000/public/index.php?action=request_transaction', [
-     'merchantOrderId' => 'ORDER-' . $transaction->id,
-    'paymentAmount' => $product->price,
-    'paymentMethod' => $request->payment_method,
-    'productDetails' => 'Pembelian ' . $product->name,
-    'email' => 'user@example.com',
-    'phoneNumber' => '081234567890',
-    'customerVaName' => $user->name,
-    'returnUrl' => 'https://yourapp.com/success',
-    'callbackUrl' => 'https://your-backend.com/api/product/callback',
-    'itemDetails' => [
-        [
-            'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => 1
-        ]
-    ]
-]);
-
-    return response()->json([
-        'message'     => 'Transaksi produk berhasil dibuat',
-        'transaction' => $transaction,
-        'payment'     => json_decode($response->body(), true)
-    ]);
-}
-
-    public function handleCallback(Request $request)
+     public function store(Request $request)
     {
-        $data = $request->all();
+        $request->validate([
+            'person_id' => 'required|exists:people,id',
+            'product_id' => 'required|exists:products,id',
+            'nomor_tujuan' => 'nullable|string',
+        ]);
 
-        if ($data['statusCode'] === '00') {
-            $id = str_replace('ORDER-', '', $data['merchantOrderId']);
-            $transaction = ProductTransaction::find($id);
+        $person = Person::findOrFail($request->person_id);
+        $product = Product::findOrFail($request->product_id);
+        $balance = $person->balance;
 
-            if ($transaction && $transaction->status !== 'completed') {
-                $transaction->update([
-                    'status' => 'completed',
-                    'paid_at' => now(),
-                    'payment_reference' => $data['reference']
-                ]);
-            }
+        if (!$balance) {
+            $balance = $person->balance()->create(['saldo' => 0]);
         }
 
-        return response()->json(['message' => 'Callback diterima'], 200);
+        if ($balance->saldo < $product->price) {
+            return response()->json(['message' => 'Saldo tidak mencukupi'], 400);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $balance->saldo -= $product->price;
+            $balance->save();
+
+            $transaction = ProductTransaction::create([
+                'person_id'    => $person->id,
+                'product_id'   => $product->id,
+                'nomor_tujuan' => $request->nomor_tujuan,
+                'amount'       => $product->price,
+                'status'       => 'completed',
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Pembelian berhasil',
+                'transaction' => $transaction,
+                'sisa_saldo' => $balance->saldo
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['message' => 'Pembelian gagal', 'error' => $e->getMessage()], 500);
+        }
     }
 
-    public function history($user_id)
+    
+
+    // Opsional: histori pembelian
+    public function history($person_id)
     {
-        $transactions = ProductTransaction::where('user_id', $user_id)->with('product')->latest()->get();
+        $transactions = ProductTransaction::where('person_id', $person_id)
+            ->with('product')
+            ->latest()
+            ->get();
+
         return response()->json($transactions);
     }
 }

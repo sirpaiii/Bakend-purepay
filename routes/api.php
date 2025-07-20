@@ -9,11 +9,19 @@ use App\Http\Controllers\PeopleController;
 use App\Http\Controllers\TransferController;
 use App\Http\Controllers\TopupController;
 use App\Http\Controllers\ProductTransactionController;
+use App\Http\Controllers\TransactionHistoryController;
+use App\Http\Controllers\TestimonialController;
+
 // Route::get('/user', function (Request $request) {
 //     return $request->user();
 // })->middleware('auth:sanctum');
 
-
+Route::options('/{any}', function () {
+    return response('', 200)
+        ->header('Access-Control-Allow-Origin', '*')
+        ->header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+        ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+})->where('any', '.*');
 
 
 Route::post('/registerFirebase', [AuthController::class, 'registerFirebase']);
@@ -54,6 +62,11 @@ Route::post('/topup', [TopupController::class, 'requestTopup']);
 Route::post('/topup/callback', [TopupController::class, 'handleCallback']);
 Route::get('/topup/history/{user_id}', [TopupController::class, 'history']);
 
-Route::post('/product/buy', [ProductTransactionController::class, 'buy']);
-Route::post('/product/callback', [ProductTransactionController::class, 'handleCallback']);
-Route::get('/product/history/{user_id}', [ProductTransactionController::class, 'history']);
+Route::post('/product-transactions', [ProductTransactionController::class, 'store']);
+Route::get('/product-transactions/history/{person_id}', [ProductTransactionController::class, 'history']);
+
+Route::get('/transaction-history', [TransactionHistoryController::class, 'getHistory']);
+Route::get('/transaction-recent', [TransactionHistoryController::class, 'getRecentHistory']);
+
+Route::get('/testimoni', [TestimonialController::class, 'index']);
+Route::post('/testimoni', [TestimonialController::class, 'store']);

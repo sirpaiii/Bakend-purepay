@@ -40,31 +40,46 @@ class TransferController extends Controller
         }
 
         // Proses transaksi
-        DB::beginTransaction();
-        try {
-            $senderBalance->saldo -= $request->amount;
-            $receiverBalance->saldo += $request->amount;
-            $senderBalance->save();
-            $receiverBalance->save();
+       DB::beginTransaction();
+try {
+    $senderBalance->saldo -= $request->amount;
+    $receiverBalance->saldo += $request->amount;
+    $senderBalance->save();
+    $receiverBalance->save();
 
-            Transfer::create([
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $request->amount,
-                'message' => $request->message,
-                'status' => 'completed',
-                'transferred_at' => now()
-            ]);
+    // Simpan transaksi ke dalam variabel
+    $transfer = Transfer::create([
+        'sender_id' => $sender->id,
+        'receiver_id' => $receiver->id,
+        'amount' => $request->amount,
+        'message' => $request->message,
+        'status' => 'completed',
+        'transferred_at' => now()
+    ]);
 
-            DB::commit();
+    DB::commit();
 
-            return response()->json(['message' => 'Transfer berhasil']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Transfer gagal',
-                'details' => $e->getMessage()
-            ], 500);
-        }
-    }
+    return response()->json([
+        'message' => 'Transfer berhasil',
+        'transaction' => [
+            'id' => $transfer->id,
+            'sender_id' => $transfer->sender_id,
+            'sender_name' => $sender->name ?? 'Unknown',
+            'receiver_id' => $transfer->receiver_id,
+            'receiver_name' => $receiver->name ?? 'Unknown',
+            'amount' => $transfer->amount,
+            'message' => $transfer->message ?? '-',
+            'status' => $transfer->status,
+            'created_at' => $transfer->transferred_at->toISOString(),
+        ]
+    ]);
+
+} catch (\Exception $e) {
+    DB::rollBack();
+    return response()->json([
+        'error' => 'Transfer gagal',
+        'details' => $e->getMessage()
+    ], 500);
+}
+}
 }
